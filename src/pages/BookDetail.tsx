@@ -5,17 +5,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { Header, Footer } from "@/components/layout";
 import { FloatingActions } from "@/components/FloatingActions";
-import { 
-  ArrowLeft, 
-  BookOpen, 
-  Star, 
-  Eye, 
-  User, 
-  Heart, 
-  Share2, 
+import {
+  ArrowLeft,
+  BookOpen,
+  Star,
+  Eye,
+  User,
+  Heart,
+  Share2,
   Download,
   Clock,
   ChevronRight
@@ -35,6 +34,7 @@ interface Book {
   difficulty: string | null;
   is_featured: boolean | null;
   content: string | null;
+  pdf_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -164,7 +164,7 @@ const BookDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
           {/* Back Button */}
@@ -321,10 +321,10 @@ const BookDetail = () => {
                 <Button
                   size="lg"
                   className="w-full sm:w-auto"
-                  onClick={() => navigate(`/book/${slug}/read`)}
+                  onClick={() => navigate(book.pdf_url ? `/book/${slug}/pdf` : `/book/${slug}/read`)}
                 >
                   <BookOpen className="mr-2 h-5 w-5" />
-                  Read Book
+                  {book.pdf_url ? 'Đọc PDF' : 'Đọc Sách'}
                 </Button>
                 <Button
                   size="lg"

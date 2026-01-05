@@ -1,6 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
+import { Header, Footer } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';

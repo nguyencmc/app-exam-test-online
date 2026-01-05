@@ -11,6 +11,14 @@ export default defineConfig(({ mode }) => ({
     allowedHosts: ["ai-exam.cloud", "www.ai-exam.cloud"],
   },
   plugins: [react()].filter(Boolean),
+  optimizeDeps: {
+    esbuildOptions: {
+      target: "esnext",
+    },
+  },
+  build: {
+    target: "esnext",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

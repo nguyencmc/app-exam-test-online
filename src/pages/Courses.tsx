@@ -1,27 +1,13 @@
 import { useState, useEffect } from "react";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { Header, Footer } from "@/components/layout";
 import { FloatingActions } from "@/components/FloatingActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { courseService } from "@/services/courseService";
+import { Course } from "@/types";
 import { Search, Eye, Heart, List, Languages, FileText, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
-
-interface Course {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  category: string;
-  subcategory: string | null;
-  topic: string | null;
-  term_count: number | null;
-  view_count: number | null;
-  creator_name: string | null;
-  is_official: boolean | null;
-}
 
 const categories = [
   { id: "all", name: "Tất cả", icon: List },
@@ -59,42 +45,25 @@ const Courses = () => {
 
   useEffect(() => {
     fetchCourses();
-  }, [selectedCategory, selectedSubcategory, activeTab]);
+  }, [selectedCategory, selectedSubcategory, activeTab, searchQuery]);
+  // Note: Added searchQuery to dependencies for live search, or could debounce
 
   const fetchCourses = async () => {
     setLoading(true);
-    let query = supabase
-      .from("courses")
-      .select("*")
-      .order("view_count", { ascending: false });
-
-    if (selectedCategory !== "all") {
-      query = query.eq("category", selectedCategory);
-    }
-
-    if (selectedSubcategory) {
-      query = query.eq("subcategory", selectedSubcategory);
-    }
-
-    if (activeTab === "official") {
-      query = query.eq("is_official", true);
-    } else {
-      query = query.eq("is_official", false);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
+    try {
+      const result = await courseService.getCourses(1, 100, {
+        category: selectedCategory,
+        subcategory: selectedSubcategory,
+        is_official: activeTab === "official",
+        search: searchQuery
+      });
+      setCourses(result.data);
+    } catch (error) {
       console.error("Error fetching courses:", error);
-    } else {
-      setCourses(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
-
-  const filteredCourses = courses.filter((course) =>
-    course.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const getGradientClass = (index: number) => {
     const gradients = [
@@ -239,7 +208,7 @@ const Courses = () => {
                 </div>
               ))}
             </div>
-          ) : filteredCourses.length === 0 ? (
+          ) : courses.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-muted-foreground text-lg">
                 Không tìm thấy khóa học nào
@@ -247,7 +216,7 @@ const Courses = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredCourses.map((course, index) => (
+              {courses.map((course, index) => (
                 <div
                   key={course.id}
                   onClick={() => navigate(`/courses/${course.id}`)}
@@ -259,7 +228,15 @@ const Courses = () => {
                       index
                     )} relative`}
                   >
-                    <div className="absolute inset-0 bg-black/10"></div>
+                    {course.image_url ? (
+                      <img
+                        src={course.image_url}
+                        alt={course.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-black/10"></div>
+                    )}
                   </div>
 
                   {/* Course Info */}
@@ -288,13 +265,17 @@ const Courses = () => {
                     {/* Footer */}
                     <div className="flex items-center justify-between pt-3 border-t border-border">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-xs font-bold text-primary">
-                            {course.creator_name?.charAt(0) || "T"}
-                          </span>
+                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                          {(course as any).profiles?.avatar_url ? ( // Use cast as profiles might not be in Course type strict definition yet
+                            <img src={(course as any).profiles.avatar_url} alt="author" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-bold text-primary">
+                              {(course.creator_name || "T").charAt(0)}
+                            </span>
+                          )}
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {course.creator_name || "The Best Study"}
+                          {course.creator_name || (course as any).profiles?.full_name || "The Best Study"}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">

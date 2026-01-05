@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
-import { Header } from '@/components/Header';
+import { Header } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +19,8 @@ import {
   Settings,
   ChevronRight,
   Plus,
-  Download
+  Download,
+  Library
 } from 'lucide-react';
 import {
   Table,
@@ -284,6 +285,7 @@ const AdminDashboard = () => {
     { title: 'Quản lý đề thi', icon: FileText, href: '/admin/exams', color: 'text-green-500', bg: 'bg-green-500/10' },
     { title: 'Quản lý Flashcard', icon: Layers, href: '/admin/flashcards', color: 'text-orange-500', bg: 'bg-orange-500/10' },
     { title: 'Quản lý Podcast', icon: Headphones, href: '/admin/podcasts', color: 'text-pink-500', bg: 'bg-pink-500/10' },
+    { title: 'Quản lý Sách', icon: Library, href: '/admin/books', color: 'text-teal-500', bg: 'bg-teal-500/10' },
   ];
 
   const quickActions = [
@@ -291,6 +293,7 @@ const AdminDashboard = () => {
     { title: 'Tạo đề thi', desc: 'Thêm đề thi mới', icon: Plus, href: '/admin/exams/create', color: 'text-primary', bg: 'bg-primary/10' },
     { title: 'Tạo Flashcard', desc: 'Thêm bộ thẻ ghi nhớ', icon: Layers, href: '/admin/flashcards/create', color: 'text-orange-500', bg: 'bg-orange-500/10' },
     { title: 'Tạo Podcast', desc: 'Thêm bài nghe mới', icon: Headphones, href: '/admin/podcasts/create', color: 'text-pink-500', bg: 'bg-pink-500/10' },
+    { title: 'Tạo Sách', desc: 'Thêm sách mới', icon: Library, href: '/admin/books/create', color: 'text-teal-500', bg: 'bg-teal-500/10' },
   ];
 
   return (

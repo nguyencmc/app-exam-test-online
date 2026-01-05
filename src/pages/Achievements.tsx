@@ -1,5 +1,4 @@
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
+import { Header, Footer } from '@/components/layout';
 import { AchievementsBadgeDisplay } from '@/components/achievements/AchievementsBadgeDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';

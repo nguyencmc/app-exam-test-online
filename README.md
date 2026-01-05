@@ -1,63 +1,92 @@
-## How can I edit this code?
+# AI-Exam.cloud - Nền Tảng Luyện Thi Trực Tuyến
 
-There are several ways of editing your application.
+Ứng dụng học tập và luyện thi trực tuyến thông minh với AI, hỗ trợ flashcards, podcasts, sách điện tử và nhiều tính năng học tập.
 
-**Use your preferred IDE**
+## 🛠 Công Nghệ Sử Dụng
 
-If you want to work locally using your own IDE, you can clone this repo and push changes.
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Library**: shadcn/ui + TailwindCSS
+- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions)
+- **State Management**: TanStack Query
+- **Routing**: React Router v6
+- **CI/CD**: GitHub Actions → SSH Deploy
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 📁 Cấu Trúc Dự Án
 
-Follow these steps:
+```
+src/
+├── components/         # React components
+│   ├── layout/         # Layout: Header, Footer, Navigation
+│   ├── ui/             # shadcn/ui components (49 files)
+│   ├── admin/          # Admin feature components
+│   ├── ai/             # AI-powered components
+│   ├── dashboard/      # Dashboard widgets
+│   ├── flashcard/      # Flashcard features
+│   └── social/         # Social features
+├── pages/              # Page components (40 files)
+│   └── admin/          # Admin pages (14 files)
+├── hooks/              # Custom React hooks
+├── contexts/           # React contexts (Auth)
+├── services/           # API service layer
+├── types/              # TypeScript interfaces
+├── utils/              # Helper functions
+├── constants/          # App constants
+├── integrations/       # External integrations (Supabase)
+└── lib/                # Utility libraries
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🚀 Bắt Đầu
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Yêu Cầu
 
-# Step 3: Install the necessary dependencies.
-npm i
+- Node.js >= 20
+- npm hoặc pnpm
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Cài Đặt
+
+```bash
+# Clone repository
+git clone https://github.com/nguyencmc/app-exam-test-online.git
+cd app-exam-test-online
+
+# Cài đặt dependencies
+npm install
+
+# Chạy development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Tạo file `.env.local`:
 
-**Use GitHub Codespaces**
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📜 Scripts
 
-## What technologies are used for this project?
+| Script | Mô tả |
+|--------|-------|
+| `npm run dev` | Chạy development server |
+| `npm run build` | Build production |
+| `npm run build:dev` | Build development |
+| `npm run lint` | Kiểm tra linting |
+| `npm run preview` | Preview production build |
 
-This project is built with:
+## 👥 Vai Trò Người Dùng
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **Admin**: Toàn quyền quản lý hệ thống
+- **Teacher**: Tạo và quản lý bài thi, khóa học
+- **Moderator**: Kiểm duyệt nội dung
+- **User**: Người dùng học tập
 
-## How can I deploy this project?
+## 🔗 Links
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- [Production](https://ai-exam.cloud)
+- [Supabase Dashboard](https://supabase.com)
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
-# Deployed via GitHub Actions CI/CD
-# CI/CD test - Sun Jan  4 13:37:41 +07 2026
+Deployed via GitHub Actions CI/CD

@@ -1,8 +1,8 @@
-import { 
-  Facebook, 
-  Youtube, 
-  Mail, 
-  Phone, 
+import {
+  Facebook,
+  Youtube,
+  Mail,
+  Phone,
   MapPin,
   Heart
 } from "lucide-react";
@@ -109,7 +109,7 @@ export const Footer = () => {
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="text-background/70">+84 123 456 789</span>
+                <span className="text-background/70">+84 8188181818</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-primary flex-shrink-0" />
@@ -125,7 +125,7 @@ export const Footer = () => {
         <div className="container mx-auto px-4 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-background/60 text-sm">
-              © 2024 AI-Exam.cloud. Tất cả quyền được bảo lưu.
+              © 2025 AI-Exam.cloud. Tất cả quyền được bảo lưu.
             </p>
             <p className="text-background/60 text-sm flex items-center gap-1">
               Được tạo với <Heart className="h-4 w-4 text-red-500 fill-red-500" /> tại Việt Nam
