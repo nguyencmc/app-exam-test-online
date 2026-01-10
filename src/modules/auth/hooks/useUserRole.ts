@@ -1,8 +1,7 @@
 // User Role Hook - Auth Module
-// Fetches and provides user role information
+// Fetches and provides user role information (Using Backend API)
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../context/AuthContext';
 import type { AppRole } from '../types/auth.types';
 
@@ -16,48 +15,38 @@ interface UserRoleResult {
 }
 
 export const useUserRole = (): UserRoleResult => {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const [roles, setRoles] = useState<AppRole[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchRoles = async () => {
-            if (!user) {
-                setRoles([]);
-                setLoading(false);
-                return;
-            }
+        if (authLoading) return;
 
-            try {
-                const { data, error } = await supabase
-                    .from('user_roles')
-                    .select('role')
-                    .eq('user_id', user.id);
+        if (!user) {
+            setRoles([]);
+            setLoading(false);
+            return;
+        }
 
-                if (error) {
-                    console.error('Error fetching roles:', error);
-                    setRoles([]);
-                } else {
-                    setRoles((data || []).map(r => r.role as AppRole));
-                }
-            } catch (err) {
-                console.error('Error:', err);
-                setRoles([]);
-            } finally {
-                setLoading(false);
-            }
-        };
+        // Get role from user object (Backend already provides it)
+        const userRole = (user.role as AppRole) || 'user';
+        setRoles([userRole]);
+        setLoading(false);
+    }, [user, authLoading]);
 
-        fetchRoles();
-    }, [user]);
-
-    const hasRole = (role: AppRole): boolean => roles.includes(role);
+    const hasRole = (role: AppRole): boolean => {
+        // Admin has all roles
+        if (roles.includes('admin')) return true;
+        // Teacher has teacher and user roles
+        if (roles.includes('teacher') && (role === 'teacher' || role === 'user')) return true;
+        return roles.includes(role);
+    };
 
     return {
         roles,
-        isAdmin: hasRole('admin'),
-        isTeacher: hasRole('teacher'),
-        isModerator: hasRole('moderator'),
+        isAdmin: roles.includes('admin'),
+        isTeacher: roles.includes('teacher'),
+        isModerator: roles.includes('moderator'),
         loading,
         hasRole,
     };

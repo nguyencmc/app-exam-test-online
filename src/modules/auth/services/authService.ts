@@ -1,114 +1,122 @@
 // Authentication Service - Auth Module
-// API calls for authentication and user management
+// API calls for authentication and user management (Using Backend API)
 
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import type { Profile, ProfileUpdate, AppRole } from '../types/auth.types';
+
+interface User {
+    id: string;
+    email: string;
+    fullName?: string;
+    role: string;
+}
+
+interface AuthResponse {
+    token: string;
+    user: User;
+    message: string;
+}
+
+const TOKEN_KEY = 'auth_token';
 
 export const authService = {
     /**
      * Sign up with email and password
      */
     async signUp(email: string, password: string, fullName?: string) {
-        const redirectUrl = `${window.location.origin}/`;
-
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                emailRedirectTo: redirectUrl,
-                data: {
-                    full_name: fullName || '',
-                }
-            }
-        });
-
-        return { data, error };
+        try {
+            const data = await api.post<AuthResponse>('/auth/register', {
+                email,
+                password,
+                fullName,
+            });
+            localStorage.setItem(TOKEN_KEY, data.token);
+            return { data, error: null };
+        } catch (error) {
+            return { data: null, error };
+        }
     },
 
     /**
      * Sign in with email and password
      */
     async signIn(email: string, password: string) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-        return { data, error };
+        try {
+            const data = await api.post<AuthResponse>('/auth/login', {
+                email,
+                password,
+            });
+            localStorage.setItem(TOKEN_KEY, data.token);
+            return { data, error: null };
+        } catch (error) {
+            return { data: null, error };
+        }
     },
 
     /**
      * Sign out
      */
     async signOut() {
-        const { error } = await supabase.auth.signOut();
-        return { error };
+        localStorage.removeItem(TOKEN_KEY);
+        return { error: null };
     },
 
     /**
-     * Get current session
+     * Get current session token
      */
     async getSession() {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        return { session, error };
+        const token = localStorage.getItem(TOKEN_KEY);
+        return { session: token ? { access_token: token } : null, error: null };
     },
 
     /**
      * Get current user
      */
     async getCurrentUser() {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        return { user, error };
+        try {
+            const { user } = await api.get<{ user: User }>('/auth/me');
+            return { user, error: null };
+        } catch (error) {
+            return { user: null, error };
+        }
     },
 
     /**
-     * Get user profile
+     * Get user profile (placeholder - needs backend implementation)
      */
     async getProfile(userId: string): Promise<Profile | null> {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-
-        if (error) {
-            if (error.code === 'PGRST116') return null;
-            throw error;
+        try {
+            const { user } = await api.get<{ user: User }>('/auth/me');
+            return {
+                id: user.id,
+                full_name: user.fullName || null,
+                avatar_url: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            };
+        } catch {
+            return null;
         }
-
-        return data;
     },
 
     /**
-     * Update user profile
+     * Update user profile (placeholder - needs backend implementation)
      */
     async updateProfile(userId: string, profile: ProfileUpdate): Promise<Profile> {
-        const { data, error } = await supabase
-            .from('profiles')
-            .update(profile)
-            .eq('id', userId)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+        // TODO: Implement when backend supports profile update
+        throw new Error('Profile update not yet implemented');
     },
 
     /**
      * Get user role
      */
     async getUserRole(userId: string): Promise<AppRole | null> {
-        const { data, error } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', userId)
-            .single();
-
-        if (error) {
-            if (error.code === 'PGRST116') return 'user';
-            throw error;
+        try {
+            const { user } = await api.get<{ user: User }>('/auth/me');
+            return (user.role as AppRole) || 'user';
+        } catch {
+            return 'user';
         }
-
-        return data?.role as AppRole || 'user';
     },
 
     /**
@@ -128,35 +136,25 @@ export const authService = {
     },
 
     /**
-     * Request password reset
+     * Request password reset (placeholder - needs backend implementation)
      */
     async resetPassword(email: string) {
-        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/auth?mode=reset`,
-        });
-        return { data, error };
+        // TODO: Implement when backend supports password reset
+        return { data: null, error: new Error('Password reset not yet implemented') };
     },
 
     /**
-     * Update password
+     * Update password (placeholder - needs backend implementation)
      */
     async updatePassword(newPassword: string) {
-        const { data, error } = await supabase.auth.updateUser({
-            password: newPassword,
-        });
-        return { data, error };
+        // TODO: Implement when backend supports password update
+        return { data: null, error: new Error('Password update not yet implemented') };
     },
 
     /**
-     * Sign in with OAuth provider
+     * Sign in with OAuth provider (not supported in self-hosted mode)
      */
     async signInWithProvider(provider: 'google' | 'github' | 'facebook') {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider,
-            options: {
-                redirectTo: `${window.location.origin}/`,
-            },
-        });
-        return { data, error };
+        return { data: null, error: new Error('OAuth not supported in self-hosted mode') };
     },
 };
