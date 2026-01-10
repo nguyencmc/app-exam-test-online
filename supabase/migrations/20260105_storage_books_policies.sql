@@ -3,6 +3,12 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('books', 'books', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow authenticated uploads to books" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public read access to books" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated updates to books" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated deletes from books" ON storage.objects;
+
 -- Allow authenticated users to upload files to books bucket
 CREATE POLICY "Allow authenticated uploads to books"
 ON storage.objects FOR INSERT

@@ -1,7 +1,15 @@
-// Exam-related API services
+// Exam Service - Exam Module
+// API calls for exam management
 
 import { supabase } from '@/integrations/supabase/client';
-import type { Exam, ExamInsert, ExamUpdate, Question, ExamAttempt, PaginatedResponse } from '@/types';
+import type {
+    Exam,
+    ExamInsert,
+    ExamUpdate,
+    Question,
+    ExamAttempt,
+} from '../types/exam.types';
+import type { PaginatedResponse } from '@/shared/types/common.types';
 
 export const examService = {
     /**
@@ -11,7 +19,6 @@ export const examService = {
         const from = (page - 1) * pageSize;
         const to = from + pageSize - 1;
 
-        // Simplify query to avoid deep type instantiation
         const { data, error } = await supabase
             .from('exams')
             .select('*, exam_categories(name, slug)')
@@ -21,7 +28,6 @@ export const examService = {
 
         if (error) throw error;
 
-        // Get total count separately
         const { count } = await supabase
             .from('exams')
             .select('*', { count: 'exact', head: true })
@@ -60,7 +66,7 @@ export const examService = {
             .single();
 
         if (error) {
-            if (error.code === 'PGRST116') return null; // Not found
+            if (error.code === 'PGRST116') return null;
             throw error;
         }
 
@@ -164,7 +170,6 @@ export const examService = {
         totalQuestions: number,
         answers: { question_id: string; selected_answer: string; is_correct: boolean }[]
     ): Promise<ExamAttempt> {
-        // Save answers
         const { error: answersError } = await supabase
             .from('attempt_answers' as any)
             .insert(
@@ -178,7 +183,6 @@ export const examService = {
 
         if (answersError) throw answersError;
 
-        // Update attempt
         const { data, error } = await supabase
             .from('exam_attempts')
             .update({
@@ -207,11 +211,11 @@ export const examService = {
         if (error) throw error;
         return data || [];
     },
+
     /**
      * Duplicate an exam including its questions
      */
     async duplicateExam(exam: Exam): Promise<Exam> {
-        // Create duplicate exam
         const { data: newExam, error: examError } = await supabase
             .from('exams')
             .insert({
@@ -223,7 +227,7 @@ export const examService = {
                 category_id: exam.category_id,
                 question_count: 0,
                 attempt_count: 0,
-                is_published: false // Default to unpublished
+                is_published: false
             })
             .select()
             .single();
@@ -231,14 +235,12 @@ export const examService = {
         if (examError) throw examError;
         if (!newExam) throw new Error('Failed to create new exam');
 
-        // Fetch questions from original exam
         const { data: questions } = await supabase
             .from('questions')
             .select('*')
             .eq('exam_id', exam.id);
 
         if (questions && questions.length > 0) {
-            // Prepare questions for new exam
             const newQuestions = questions.map(q => ({
                 exam_id: newExam.id,
                 question_text: q.question_text,
@@ -255,14 +257,12 @@ export const examService = {
                 question_order: q.question_order,
             }));
 
-            // Insert questions
             const { error: questionsError } = await supabase
                 .from('questions')
                 .insert(newQuestions);
 
             if (questionsError) throw questionsError;
 
-            // Update question count
             await supabase
                 .from('exams')
                 .update({ question_count: questions.length })
@@ -276,7 +276,6 @@ export const examService = {
      * Delete an exam and its questions
      */
     async deleteExamWithQuestions(id: string): Promise<void> {
-        // Delete questions first
         const { error: qError } = await supabase
             .from('questions')
             .delete()
@@ -284,7 +283,6 @@ export const examService = {
 
         if (qError) throw qError;
 
-        // Delete exam
         const { error: eError } = await supabase
             .from('exams')
             .delete()

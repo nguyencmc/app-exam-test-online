@@ -1,7 +1,15 @@
-// Flashcard-related API services
+// Flashcard Service - Flashcard Module
+// API calls for flashcard management
 
 import { supabase } from '@/integrations/supabase/client';
-import type { Flashcard, FlashcardSet, FlashcardInsert, FlashcardUpdate, PaginatedResponse, FlashcardSetWithCards } from '@/types';
+import type {
+    Flashcard,
+    FlashcardSet,
+    FlashcardInsert,
+    FlashcardUpdate,
+    FlashcardSetWithCards
+} from '../types/flashcard.types';
+import type { PaginatedResponse } from '@/shared/types/common.types';
 
 export const flashcardService = {
     /**
@@ -103,11 +111,9 @@ export const flashcardService = {
     },
 
     /**
-     * Get flashcards due for review (Simulated since SM-2 columns missing)
-     * For now, returns cards not remembered or reviewed long ago
+     * Get flashcards due for review
      */
     async getDueFlashcards(userId: string): Promise<Flashcard[]> {
-        // Since we lack 'next_review', simply get cards not marked as remembered
         const { data, error } = await supabase
             .from('user_flashcard_progress')
             .select('flashcard_id, flashcards(*)')
@@ -116,24 +122,15 @@ export const flashcardService = {
             .limit(20);
 
         if (error) throw error;
-
-        // Safely cast and filter
         return (data?.map(p => p.flashcards).filter(Boolean) || []) as Flashcard[];
     },
 
     /**
      * Update flashcard progress
-     * Simplified logic compatible with current schema
      */
-    async updateProgress(
-        userId: string,
-        flashcardId: string,
-        quality: number // 0-5 rating
-    ): Promise<void> {
-        // Logic: If quality >= 3 (Good/Easy), mark as remembered
+    async updateProgress(userId: string, flashcardId: string, quality: number): Promise<void> {
         const isRemembered = quality >= 3;
 
-        // Get current progress to increment review_count
         const { data: current } = await supabase
             .from('user_flashcard_progress')
             .select('review_count')

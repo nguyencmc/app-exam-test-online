@@ -3,10 +3,10 @@ import { Header, Footer } from "@/components/layout";
 import { FloatingActions } from "@/components/FloatingActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { courseService } from "@/services/courseService";
+import { courseService } from "@/modules/course";
 import { Course } from "@/types";
 import { Search, Eye, Heart, List, Languages, FileText, Plus } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/modules/auth";
 import { Link, useNavigate } from "react-router-dom";
 
 const categories = [

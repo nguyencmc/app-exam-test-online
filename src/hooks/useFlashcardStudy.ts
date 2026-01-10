@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { flashcardService } from "@/services";
-import { useAuth } from "@/contexts/AuthContext";
+import { flashcardService } from "@/modules/flashcard";
+import { useAuth } from "@/modules/auth";
 import { Flashcard } from "@/types";
 
 type CardStatus = 'known' | 'unknown' | 'unseen';

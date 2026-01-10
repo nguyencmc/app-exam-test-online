@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useUserRole } from '@/modules/auth';
 import { Header } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { ExamStats } from '@/components/admin/exams/ExamStats';
 import { ExamFilters } from '@/components/admin/exams/ExamFilters';
 import { ExamTable } from '@/components/admin/exams/ExamTable';
 import { ExamGrid } from '@/components/admin/exams/ExamGrid';
-import { useAdminExams } from '@/hooks/useAdminExams';
+import { useAdminExams } from '@/modules/exam';
 
 const ExamManagement = () => {
   const { isAdmin, isTeacher, loading: roleLoading } = useUserRole();

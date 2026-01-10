@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, Lock, Sparkles } from 'lucide-react';
 import { useAchievements } from '@/hooks/useAchievements';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/modules/auth';
 import { cn } from '@/lib/utils';
 
 const badgeColorClasses: Record<string, string> = {

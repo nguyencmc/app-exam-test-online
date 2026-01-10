@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSpacedRepetition } from '@/hooks/useSpacedRepetition';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/modules/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Header, Footer } from '@/components/layout';
 import { Card, CardContent } from '@/components/ui/card';

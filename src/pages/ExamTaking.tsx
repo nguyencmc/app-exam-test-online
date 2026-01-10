@@ -2,12 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/modules/auth';
 import { Header, Footer } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { AIExplanation } from '@/components/exam/AIExplanation';
+import {
+  CameraMonitor,
+  AntiCheatStatus,
+  ProctoringConsent,
+  type ProctoringOptions
+} from '@/components/exam/Proctoring';
+import { proctoringService } from '@/modules/proctoring';
 import {
   Clock,
   ChevronLeft,
@@ -21,7 +28,8 @@ import {
   List,
   LayoutGrid,
   Flag,
-  Lock
+  Lock,
+  Shield
 } from 'lucide-react';
 import {
   Drawer,
@@ -80,6 +88,14 @@ const ExamTaking = () => {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showNavigator, setShowNavigator] = useState(false);
   const [startTime] = useState(Date.now());
+
+  // Proctoring state
+  const [showProctoringConsent, setShowProctoringConsent] = useState(true);
+  const [proctoringEnabled, setProctoringEnabled] = useState(false);
+  const [proctoringOptions, setProctoringOptions] = useState<ProctoringOptions | null>(null);
+  const [proctoringSnapshots, setProctoringSnapshots] = useState<string[]>([]);
+  const [proctoringSessionId, setProctoringSessionId] = useState<string | null>(null);
+  const [isUploadingSnapshot, setIsUploadingSnapshot] = useState(false);
 
   // Fetch exam details
   const { data: exam, isLoading: examLoading } = useQuery({
@@ -232,6 +248,82 @@ const ExamTaking = () => {
       answers: answers,
     });
   }, [questions, exam, answers, startTime, user?.id]);
+
+  // Handle proctoring consent
+  const handleProctoringAccept = useCallback(async (options: ProctoringOptions) => {
+    setProctoringOptions(options);
+    setProctoringEnabled(true);
+    setShowProctoringConsent(false);
+
+    // Create proctoring session in database
+    if (user?.id && exam?.id) {
+      try {
+        const sessionId = await proctoringService.createSession({
+          user_id: user.id,
+          exam_id: exam.id,
+          camera_enabled: options.enableCamera,
+          screen_enabled: false,
+          started_at: new Date().toISOString(),
+        });
+
+        if (sessionId) {
+          setProctoringSessionId(sessionId);
+          console.log('✅ Proctoring session created:', sessionId);
+        } else {
+          console.error('❌ Failed to create proctoring session');
+        }
+      } catch (error) {
+        console.error('❌ Error creating proctoring session:', error);
+      }
+    }
+
+    // Enter fullscreen if required
+    if (options.enableFullscreen) {
+      document.documentElement.requestFullscreen?.().catch(() => {
+        console.warn('Could not enter fullscreen');
+      });
+    }
+  }, [user?.id, exam?.id]);
+
+  const handleProctoringDecline = useCallback(() => {
+    setShowProctoringConsent(false);
+    // Continue without proctoring
+    setProctoringEnabled(false);
+  }, []);
+
+  // Handle proctoring snapshot - UPLOAD TO SUPABASE
+  const handleProctoringSnapshot = useCallback(async (imageData: string) => {
+    if (!user?.id || !proctoringSessionId || isUploadingSnapshot) return;
+
+    setIsUploadingSnapshot(true);
+    try {
+      // Upload to Supabase Storage
+      const mediaUrl = await proctoringService.uploadSnapshot(
+        proctoringSessionId,
+        imageData,
+        user.id
+      );
+
+      if (mediaUrl) {
+        // Log event to database
+        await proctoringService.logEvent({
+          session_id: proctoringSessionId,
+          event_type: 'snapshot',
+          media_url: mediaUrl,
+          event_data: { timestamp: Date.now() }
+        });
+
+        setProctoringSnapshots(prev => [...prev, mediaUrl]);
+        console.log('✅ Snapshot uploaded:', proctoringSnapshots.length + 1);
+      } else {
+        console.error('❌ Failed to upload snapshot');
+      }
+    } catch (error) {
+      console.error('❌ Snapshot upload error:', error);
+    } finally {
+      setIsUploadingSnapshot(false);
+    }
+  }, [user?.id, proctoringSessionId, isUploadingSnapshot, proctoringSnapshots.length]);
 
   const currentQuestion = questions?.[currentQuestionIndex];
   const answeredCount = Object.keys(answers).filter(id => answers[id]?.length > 0).length;
@@ -739,6 +831,27 @@ const ExamTaking = () => {
                 })}
               </div>
 
+              {/* Proctoring Widgets */}
+              {proctoringEnabled && (
+                <div className="space-y-3 mt-4">
+                  {proctoringOptions?.enableCamera && (
+                    <CameraMonitor
+                      enabled={proctoringEnabled}
+                      onSnapshot={handleProctoringSnapshot}
+                      snapshotInterval={30000}
+                      showPreview={true}
+                    />
+                  )}
+
+                  {proctoringOptions?.enableAntiCheat && (
+                    <AntiCheatStatus
+                      enabled={proctoringEnabled}
+                      showDetails={false}
+                    />
+                  )}
+                </div>
+              )}
+
               <Button
                 onClick={() => setShowSubmitDialog(true)}
                 className="w-full mt-4"
@@ -757,6 +870,14 @@ const ExamTaking = () => {
         </Button>
       </div>
 
+      {/* Proctoring Consent Modal */}
+      <ProctoringConsent
+        open={showProctoringConsent && !isSubmitted && !!exam}
+        onAccept={handleProctoringAccept}
+        onDecline={handleProctoringDecline}
+        examTitle={exam?.title}
+      />
+
       {/* Submit Confirmation Dialog */}
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
         <AlertDialogContent>
@@ -767,6 +888,11 @@ const ExamTaking = () => {
               {answeredCount < questions.length && (
                 <span className="block mt-2 text-yellow-500">
                   Còn {questions.length - answeredCount} câu chưa trả lời!
+                </span>
+              )}
+              {proctoringEnabled && proctoringSnapshots.length > 0 && (
+                <span className="block mt-2 text-muted-foreground">
+                  📷 Đã ghi nhận {proctoringSnapshots.length} ảnh giám sát
                 </span>
               )}
             </AlertDialogDescription>

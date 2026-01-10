@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useCourseDetail, useEnrollment, useEnrollCourse } from '@/hooks/useCourse';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/modules/auth';
 import { VideoPlayer } from '@/components/course/VideoPlayer';
 
 const CourseDetail = () => {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/modules/auth';
 import { useStudyGroupDetail } from '@/hooks/useStudyGroups';
 import { useStudyGroups } from '@/hooks/useStudyGroups';
 import { Header, Footer } from '@/components/layout';

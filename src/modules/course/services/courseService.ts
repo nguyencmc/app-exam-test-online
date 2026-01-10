@@ -1,4 +1,5 @@
-// Course-related API services
+// Course Service - Course Module
+// API calls for course management
 
 import { supabase } from '@/integrations/supabase/client';
 import type {
@@ -8,12 +9,12 @@ import type {
     CourseModule,
     Lesson,
     CourseDetail,
-    PaginatedResponse
-} from '@/types';
+} from '../types/course.types';
+import type { PaginatedResponse } from '@/shared/types/common.types';
 
 export const courseService = {
     /**
-     * Get all published/official courses with pagination and filters (Student view)
+     * Get all published/official courses with pagination and filters
      */
     async getCourses(
         page = 1,
@@ -63,7 +64,7 @@ export const courseService = {
     },
 
     /**
-     * Get all courses for Admin dashboard (includes drafts/unofficial)
+     * Get all courses for Admin dashboard
      */
     async getAdminCourses(page = 1, pageSize = 10, search = ''): Promise<PaginatedResponse<Course>> {
         const from = (page - 1) * pageSize;
@@ -97,13 +98,7 @@ export const courseService = {
     async getCourse(id: string): Promise<Course | null> {
         const { data, error } = await supabase
             .from('courses')
-            .select(`
-        *,
-        course_modules(
-          *,
-          lessons:course_lessons(*)
-        )
-      `)
+            .select(`*, course_modules(*, lessons:course_lessons(*))`)
             .eq('id', id)
             .single();
 
@@ -116,47 +111,15 @@ export const courseService = {
     },
 
     /**
-     * Get full course details including requirements, outcomes, instructors
+     * Get full course details
      */
     async getCourseWithDetails(id: string): Promise<CourseDetail | null> {
-        const coursePromise = supabase
-            .from('courses')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        const modulesPromise = supabase
-            .from('course_modules')
-            .select(`
-                *,
-                lessons:course_lessons(*)
-            `)
-            .eq('course_id', id)
-            .order('order_index');
-
-        const requirementsPromise = supabase
-            .from('course_requirements')
-            .select('requirement_text')
-            .eq('course_id', id)
-            .order('order_index');
-
-        const outcomesPromise = supabase
-            .from('course_outcomes')
-            .select('outcome_text')
-            .eq('course_id', id)
-            .order('order_index');
-
-        const instructorsPromise = supabase
-            .from('course_instructors')
-            .select('user_id, bio, title, is_primary')
-            .eq('course_id', id);
-
         const [courseRes, modulesRes, reqRes, outlinesRes, instRes] = await Promise.all([
-            coursePromise,
-            modulesPromise,
-            requirementsPromise,
-            outcomesPromise,
-            instructorsPromise
+            supabase.from('courses').select('*').eq('id', id).single(),
+            supabase.from('course_modules').select(`*, lessons:course_lessons(*)`).eq('course_id', id).order('order_index'),
+            supabase.from('course_requirements').select('requirement_text').eq('course_id', id).order('order_index'),
+            supabase.from('course_outcomes').select('outcome_text').eq('course_id', id).order('order_index'),
+            supabase.from('course_instructors').select('user_id, bio, title, is_primary').eq('course_id', id)
         ]);
 
         if (courseRes.error) throw courseRes.error;
@@ -188,7 +151,6 @@ export const courseService = {
      * Get lesson by ID
      */
     async getLesson(lessonId: string): Promise<Lesson | null> {
-        // Assuming 'course_lessons' is the main table name based on hook usage.
         const { data, error } = await supabase
             .from('course_lessons')
             .select('*')
@@ -197,16 +159,6 @@ export const courseService = {
 
         if (error) {
             if (error.code === 'PGRST116') return null;
-            // Fallback to 'lessons' if 'course_lessons' fails
-            if (error.code === '42P01') {
-                const { data: retryData, error: retryError } = await supabase
-                    .from('lessons')
-                    .select('*')
-                    .eq('id', lessonId)
-                    .single();
-                if (retryError) throw retryError;
-                return retryData;
-            }
             throw error;
         }
 
@@ -214,7 +166,7 @@ export const courseService = {
     },
 
     /**
-     * Create a new course (admin/teacher only)
+     * Create a new course
      */
     async createCourse(course: CourseInsert): Promise<Course> {
         const { data, error } = await supabase
@@ -228,7 +180,7 @@ export const courseService = {
     },
 
     /**
-     * Update a course (admin/teacher only)
+     * Update a course
      */
     async updateCourse(id: string, course: CourseUpdate): Promise<Course> {
         const { data, error } = await supabase
@@ -243,7 +195,7 @@ export const courseService = {
     },
 
     /**
-     * Delete a course (admin only)
+     * Delete a course
      */
     async deleteCourse(id: string): Promise<void> {
         const { error } = await supabase
@@ -260,10 +212,7 @@ export const courseService = {
     async enrollInCourse(courseId: string, userId: string): Promise<any> {
         const { data, error } = await supabase
             .from('course_enrollments')
-            .insert({
-                course_id: courseId,
-                user_id: userId,
-            })
+            .insert({ course_id: courseId, user_id: userId })
             .select()
             .single();
 
@@ -313,11 +262,7 @@ export const courseService = {
     /**
      * Update lesson progress
      */
-    async updateLessonProgress(
-        enrollmentId: string,
-        lessonId: string,
-        completed: boolean
-    ): Promise<void> {
+    async updateLessonProgress(enrollmentId: string, lessonId: string, completed: boolean): Promise<void> {
         const { error } = await supabase
             .from('lesson_progress')
             .upsert({

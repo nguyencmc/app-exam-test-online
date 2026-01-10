@@ -1,8 +1,11 @@
+// Admin Exams Hook - Exam Module
+// Provides state and actions for admin exam management
+
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { examService } from "@/services";
+import { examService } from "../services/examService";
 import { supabase } from "@/integrations/supabase/client";
-import { Exam, ExamCategory } from "@/types";
+import type { Exam, ExamCategory } from "../types/exam.types";
 import { useToast } from "@/hooks/use-toast";
 
 export const useAdminExams = () => {
@@ -81,7 +84,6 @@ export const useAdminExams = () => {
         if (selectedExams.length === 0) return;
 
         try {
-            // Sequential delete to ensure constraints are handled
             for (const id of selectedExams) {
                 await examService.deleteExamWithQuestions(id);
             }
@@ -105,7 +107,7 @@ export const useAdminExams = () => {
     return {
         // Data
         exams: filteredExams,
-        allExams: exams || [], // For stats
+        allExams: exams || [],
         categories: categories || [],
         isLoading: examsLoading || categoriesLoading,
 

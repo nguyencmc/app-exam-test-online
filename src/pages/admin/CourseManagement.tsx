@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useUserRole } from '@/hooks/useUserRole';
-import { courseService } from '@/services/courseService';
+import { useUserRole } from '@/modules/auth';
+import { courseService } from '@/modules/course';
 import { Course } from '@/types';
 import { Header } from '@/components/layout';
 import { Button } from '@/components/ui/button';

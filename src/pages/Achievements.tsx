@@ -1,6 +1,6 @@
 import { Header, Footer } from '@/components/layout';
 import { AchievementsBadgeDisplay } from '@/components/achievements/AchievementsBadgeDisplay';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/modules/auth';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Trophy } from 'lucide-react';

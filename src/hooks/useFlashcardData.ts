@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { flashcardService } from "@/services";
-import { useAuth } from "@/contexts/AuthContext";
+import { flashcardService } from "@/modules/flashcard";
+import { useAuth } from "@/modules/auth";
 import { FlashcardSet, Flashcard } from "@/types";
 
 export const useFlashcardData = (selectedSetId?: string) => {

@@ -1,7 +1,8 @@
-// Authentication-related API services
+// Authentication Service - Auth Module
+// API calls for authentication and user management
 
 import { supabase } from '@/integrations/supabase/client';
-import type { Profile, ProfileUpdate, AppRole } from '@/types';
+import type { Profile, ProfileUpdate, AppRole } from '../types/auth.types';
 
 export const authService = {
     /**

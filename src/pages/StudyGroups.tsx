@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/modules/auth';
 import { useStudyGroups } from '@/hooks/useStudyGroups';
 import { Header, Footer } from '@/components/layout';
 import { Button } from '@/components/ui/button';
