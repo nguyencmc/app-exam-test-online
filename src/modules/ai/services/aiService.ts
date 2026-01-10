@@ -1,6 +1,7 @@
-// AI Service - Handles all AI-related Edge Function calls
+// AI Service - Handles AI-related API calls (Using Backend API)
+// Note: AI features require backend Edge Functions or external AI services
 
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import type {
     GenerateQuestionsRequest,
     GenerateQuestionsResponse,
@@ -12,71 +13,43 @@ import type {
 } from '../types/ai.types';
 
 export const aiService = {
-    /**
-     * Generate quiz questions from content using AI
-     */
     async generateQuestions(request: GenerateQuestionsRequest): Promise<GenerateQuestionsResponse> {
-        const { data, error } = await supabase.functions.invoke('generate-questions', {
-            body: {
-                content: request.content,
-                questionCount: request.questionCount || 5,
-                difficulty: request.difficulty || 'medium',
-            },
-        });
-
-        if (error) {
+        try {
+            const response = await api.post<GenerateQuestionsResponse>('/ai/generate-questions', request);
+            return response;
+        } catch (error) {
             console.error('Generate questions error:', error);
-            return { questions: [], error: error.message };
+            return { questions: [], error: (error as Error).message };
         }
-
-        return data as GenerateQuestionsResponse;
     },
 
-    /**
-     * Get AI explanation for an answer
-     */
     async explainAnswer(request: ExplainAnswerRequest): Promise<ExplainAnswerResponse> {
-        const { data, error } = await supabase.functions.invoke('explain-answer', {
-            body: request,
-        });
-
-        if (error) {
+        try {
+            const response = await api.post<ExplainAnswerResponse>('/ai/explain-answer', request);
+            return response;
+        } catch (error) {
             console.error('Explain answer error:', error);
-            return { explanation: '', error: error.message };
+            return { explanation: '', error: (error as Error).message };
         }
-
-        return data as ExplainAnswerResponse;
     },
 
-    /**
-     * Chat with AI tutor
-     */
     async chatWithTutor(request: AITutorRequest): Promise<AITutorResponse> {
-        const { data, error } = await supabase.functions.invoke('ai-tutor', {
-            body: request,
-        });
-
-        if (error) {
+        try {
+            const response = await api.post<AITutorResponse>('/ai/tutor', request);
+            return response;
+        } catch (error) {
             console.error('AI Tutor error:', error);
-            return { message: '', error: error.message };
+            return { message: '', error: (error as Error).message };
         }
-
-        return data as AITutorResponse;
     },
 
-    /**
-     * Get smart recommendations for the user
-     */
     async getRecommendations(userId: string): Promise<SmartRecommendationsResponse> {
-        const { data, error } = await supabase.functions.invoke('smart-recommendations', {
-            body: { userId },
-        });
-
-        if (error) {
+        try {
+            const response = await api.post<SmartRecommendationsResponse>('/ai/recommendations', { userId });
+            return response;
+        } catch (error) {
             console.error('Recommendations error:', error);
-            return { recommendations: [], error: error.message };
+            return { recommendations: [], error: (error as Error).message };
         }
-
-        return data as SmartRecommendationsResponse;
     },
 };

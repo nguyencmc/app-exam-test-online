@@ -7,6 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============ AUTH ============
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -16,40 +17,41 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  examAttempts ExamAttempt[]
-  activities   UserActivity[]
+  examAttempts       ExamAttempt[]
+  activities         UserActivity[]
+  courseEnrollments  CourseEnrollment[]
+  flashcardProgress  FlashcardProgress[]
 }
 
+// ============ EXAM ============
 model ExamCategory {
   id        String   @id @default(uuid())
   name      String
   slug      String   @unique
   createdAt DateTime @default(now())
-
   exams     Exam[]
 }
 
 model Exam {
-  id              String   @id @default(uuid())
+  id              String        @id @default(uuid())
   title           String
   description     String?
-  slug            String   @unique
-  durationMinutes Int      @default(30)
-  difficulty      String   @default("medium")
-  isPublished     Boolean  @default(false)
-  questionCount   Int      @default(0)
-  attemptCount    Int      @default(0)
+  slug            String        @unique
+  durationMinutes Int           @default(30)
+  difficulty      String        @default("medium")
+  isPublished     Boolean       @default(false)
+  questionCount   Int           @default(0)
+  attemptCount    Int           @default(0)
   categoryId      String?
   category        ExamCategory? @relation(fields: [categoryId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  questions   Question[]
-  attempts    ExamAttempt[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  questions       Question[]
+  attempts        ExamAttempt[]
 }
 
 model Question {
-  id            String   @id @default(uuid())
+  id            String  @id @default(uuid())
   questionText  String
   optionA       String?
   optionB       String?
@@ -59,27 +61,26 @@ model Question {
   optionF       String?
   correctAnswer String
   explanation   String?
-  orderIndex    Int      @default(0)
+  orderIndex    Int     @default(0)
   examId        String
-  exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  exam          Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
 }
 
 model ExamAttempt {
-  id             String    @id @default(uuid())
+  id             String          @id @default(uuid())
   userId         String
-  user           User      @relation(fields: [userId], references: [id])
+  user           User            @relation(fields: [userId], references: [id])
   examId         String
-  exam           Exam      @relation(fields: [examId], references: [id])
+  exam           Exam            @relation(fields: [examId], references: [id])
   score          Float?
   totalQuestions Int?
-  startedAt      DateTime  @default(now())
+  startedAt      DateTime        @default(now())
   completedAt    DateTime?
-
-  answers AttemptAnswer[]
+  answers        AttemptAnswer[]
 }
 
 model AttemptAnswer {
-  id             String   @id @default(uuid())
+  id             String      @id @default(uuid())
   attemptId      String
   attempt        ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   questionId     String
@@ -87,6 +88,89 @@ model AttemptAnswer {
   isCorrect      Boolean
 }
 
+// ============ COURSE ============
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  category    String?
+  subcategory String?
+  thumbnail   String?
+  isOfficial  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  modules     CourseModule[]
+  enrollments CourseEnrollment[]
+}
+
+model CourseModule {
+  id         String   @id @default(uuid())
+  title      String
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  orderIndex Int      @default(0)
+  lessons    CourseLesson[]
+}
+
+model CourseLesson {
+  id          String       @id @default(uuid())
+  title       String
+  content     String?
+  videoUrl    String?
+  moduleId    String
+  module      CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  orderIndex  Int          @default(0)
+  durationMin Int          @default(0)
+}
+
+model CourseEnrollment {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  courseId   String
+  course     Course    @relation(fields: [courseId], references: [id])
+  enrolledAt DateTime  @default(now())
+  completedAt DateTime?
+
+  @@unique([userId, courseId])
+}
+
+// ============ FLASHCARD ============
+model FlashcardSet {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  isPublic    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  flashcards  Flashcard[]
+}
+
+model Flashcard {
+  id        String       @id @default(uuid())
+  front     String
+  back      String
+  setId     String
+  set       FlashcardSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  cardOrder Int          @default(0)
+  progress  FlashcardProgress[]
+}
+
+model FlashcardProgress {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  flashcardId    String
+  flashcard      Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  isRemembered   Boolean   @default(false)
+  reviewCount    Int       @default(0)
+  lastReviewedAt DateTime?
+
+  @@unique([userId, flashcardId])
+}
+
+// ============ ACTIVITY ============
 model UserActivity {
   id        String   @id @default(uuid())
   userId    String
