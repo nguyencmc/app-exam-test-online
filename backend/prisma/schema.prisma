@@ -7,56 +7,84 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model - matching Supabase auth.users vaguely but simplified for self-hosted
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
-  password  String   // Hashed password
+  password  String
   fullName  String?
-  role      String   @default("user") // "admin", "user"
+  role      String   @default("user")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   examAttempts ExamAttempt[]
   activities   UserActivity[]
 }
 
+model ExamCategory {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  exams     Exam[]
+}
+
 model Exam {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  slug        String   @unique
-  duration    Int      // in minutes
-  questionCount Int
-  category    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  title           String
+  description     String?
+  slug            String   @unique
+  durationMinutes Int      @default(30)
+  difficulty      String   @default("medium")
+  isPublished     Boolean  @default(false)
+  questionCount   Int      @default(0)
+  attemptCount    Int      @default(0)
+  categoryId      String?
+  category        ExamCategory? @relation(fields: [categoryId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   questions   Question[]
   attempts    ExamAttempt[]
 }
 
 model Question {
-  id          String   @id @default(uuid())
-  text        String
-  options     Json     // Array of strings or objects
-  correctAnswer String // Or index
-  explanation String?
-  examId      String
-  exam        Exam     @relation(fields: [examId], references: [id])
+  id            String   @id @default(uuid())
+  questionText  String
+  optionA       String?
+  optionB       String?
+  optionC       String?
+  optionD       String?
+  optionE       String?
+  optionF       String?
+  correctAnswer String
+  explanation   String?
+  orderIndex    Int      @default(0)
+  examId        String
+  exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
 }
 
 model ExamAttempt {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  examId    String
-  exam      Exam     @relation(fields: [examId], references: [id])
-  score     Float
-  answers   Json     // User's answers
-  startedAt DateTime @default(now())
-  completedAt DateTime?
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  examId         String
+  exam           Exam      @relation(fields: [examId], references: [id])
+  score          Float?
+  totalQuestions Int?
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+
+  answers AttemptAnswer[]
+}
+
+model AttemptAnswer {
+  id             String   @id @default(uuid())
+  attemptId      String
+  attempt        ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId     String
+  selectedAnswer String
+  isCorrect      Boolean
 }
 
 model UserActivity {

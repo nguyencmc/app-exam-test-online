@@ -15,8 +15,10 @@ app.use(express.json());
 
 // Routes
 import authRoutes from './routes/auth.routes';
+import examRoutes from './routes/exam.routes';
 
 app.use('/api/auth', authRoutes);
+app.use('/api/exams', examRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to AI Exam API', version: '1.0.0' });
