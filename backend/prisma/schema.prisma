@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - matching Supabase auth.users vaguely but simplified for self-hosted
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed password
+  fullName  String?
+  role      String   @default("user") // "admin", "user"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  examAttempts ExamAttempt[]
+  activities   UserActivity[]
+}
+
+model Exam {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  slug        String   @unique
+  duration    Int      // in minutes
+  questionCount Int
+  category    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  questions   Question[]
+  attempts    ExamAttempt[]
+}
+
+model Question {
+  id          String   @id @default(uuid())
+  text        String
+  options     Json     // Array of strings or objects
+  correctAnswer String // Or index
+  explanation String?
+  examId      String
+  exam        Exam     @relation(fields: [examId], references: [id])
+}
+
+model ExamAttempt {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  examId    String
+  exam      Exam     @relation(fields: [examId], references: [id])
+  score     Float
+  answers   Json     // User's answers
+  startedAt DateTime @default(now())
+  completedAt DateTime?
+}
+
+model UserActivity {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   Json?
+  createdAt DateTime @default(now())
+}
