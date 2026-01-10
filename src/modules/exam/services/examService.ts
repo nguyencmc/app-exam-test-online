@@ -1,7 +1,7 @@
 // Exam Service - Exam Module
-// API calls for exam management
+// API calls for exam management (Using Backend API)
 
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import type {
     Exam,
     ExamInsert,
@@ -11,34 +11,32 @@ import type {
 } from '../types/exam.types';
 import type { PaginatedResponse } from '@/shared/types/common.types';
 
+interface ApiResponse<T> {
+    data: T;
+}
+
+interface PaginatedApiResponse<T> {
+    data: T[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+}
+
 export const examService = {
     /**
      * Get all published exams with pagination
      */
     async getExams(page = 1, pageSize = 10): Promise<PaginatedResponse<Exam>> {
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
-
-        const { data, error } = await supabase
-            .from('exams')
-            .select('*, exam_categories(name, slug)')
-            .eq('is_published', true)
-            .order('created_at', { ascending: false })
-            .range(from, to);
-
-        if (error) throw error;
-
-        const { count } = await supabase
-            .from('exams')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_published', true);
-
+        const response = await api.get<PaginatedApiResponse<Exam>>(
+            `/exams?page=${page}&pageSize=${pageSize}`
+        );
         return {
-            data: data || [],
-            total: count || 0,
-            page,
-            pageSize,
-            totalPages: Math.ceil((count || 0) / pageSize),
+            data: response.data,
+            total: response.total,
+            page: response.page,
+            pageSize: response.pageSize,
+            totalPages: response.totalPages,
         };
     },
 
@@ -46,119 +44,71 @@ export const examService = {
      * Get all exams for admin (including unpublished)
      */
     async getAdminExams(): Promise<Exam[]> {
-        const { data, error } = await supabase
-            .from('exams')
-            .select('*, exam_categories(name, slug)')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        const response = await api.get<ApiResponse<Exam[]>>('/exams/admin/all');
+        return response.data;
     },
 
     /**
      * Get exam by ID or slug
      */
     async getExam(idOrSlug: string): Promise<Exam | null> {
-        const { data, error } = await supabase
-            .from('exams')
-            .select('*, exam_categories(name, slug), questions(*)')
-            .or(`id.eq.${idOrSlug},slug.eq.${idOrSlug}`)
-            .single();
-
-        if (error) {
-            if (error.code === 'PGRST116') return null;
-            throw error;
+        try {
+            const response = await api.get<ApiResponse<Exam>>(`/exams/${idOrSlug}`);
+            return response.data;
+        } catch {
+            return null;
         }
-
-        return data;
     },
 
     /**
      * Get exams by category
      */
     async getExamsByCategory(categorySlug: string): Promise<Exam[]> {
-        const { data, error } = await supabase
-            .from('exams')
-            .select('*, exam_categories!inner(name, slug)')
-            .eq('exam_categories.slug', categorySlug)
-            .eq('is_published', true)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        const response = await api.get<ApiResponse<Exam[]>>(
+            `/exams/category/${categorySlug}`
+        );
+        return response.data;
     },
 
     /**
      * Get questions for an exam
      */
     async getExamQuestions(examId: string): Promise<Question[]> {
-        const { data, error } = await supabase
-            .from('questions')
-            .select('*')
-            .eq('exam_id', examId)
-            .order('order_index', { ascending: true });
-
-        if (error) throw error;
-        return data || [];
+        const exam = await this.getExam(examId);
+        return (exam?.questions as Question[]) || [];
     },
 
     /**
      * Create a new exam (admin/teacher only)
      */
     async createExam(exam: ExamInsert): Promise<Exam> {
-        const { data, error } = await supabase
-            .from('exams')
-            .insert(exam)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+        const response = await api.post<ApiResponse<Exam>>('/exams', exam);
+        return response.data;
     },
 
     /**
      * Update an exam (admin/teacher only)
      */
     async updateExam(id: string, exam: ExamUpdate): Promise<Exam> {
-        const { data, error } = await supabase
-            .from('exams')
-            .update(exam)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+        const response = await api.put<ApiResponse<Exam>>(`/exams/${id}`, exam);
+        return response.data;
     },
 
     /**
      * Delete an exam (admin only)
      */
     async deleteExam(id: string): Promise<void> {
-        const { error } = await supabase
-            .from('exams')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
+        await api.delete(`/exams/${id}`);
     },
 
     /**
      * Start an exam attempt
      */
     async startAttempt(examId: string, userId: string): Promise<ExamAttempt> {
-        const { data, error } = await supabase
-            .from('exam_attempts')
-            .insert({
-                exam_id: examId,
-                user_id: userId,
-                started_at: new Date().toISOString(),
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+        const response = await api.post<ApiResponse<ExamAttempt>>('/exams/attempts', {
+            examId,
+        });
+        return response.data;
     },
 
     /**
@@ -168,126 +118,36 @@ export const examService = {
         attemptId: string,
         score: number,
         totalQuestions: number,
-        answers: { question_id: string; selected_answer: string; is_correct: boolean }[]
+        answers: { questionId: string; selectedAnswer: string; isCorrect: boolean }[]
     ): Promise<ExamAttempt> {
-        const { error: answersError } = await supabase
-            .from('attempt_answers' as any)
-            .insert(
-                answers.map(a => ({
-                    attempt_id: attemptId,
-                    question_id: a.question_id,
-                    selected_answer: a.selected_answer,
-                    is_correct: a.is_correct,
-                }))
-            );
-
-        if (answersError) throw answersError;
-
-        const { data, error } = await supabase
-            .from('exam_attempts')
-            .update({
-                completed_at: new Date().toISOString(),
-                score,
-                total_questions: totalQuestions,
-            })
-            .eq('id', attemptId)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+        const response = await api.put<ApiResponse<ExamAttempt>>(
+            `/exams/attempts/${attemptId}`,
+            { score, totalQuestions, answers }
+        );
+        return response.data;
     },
 
     /**
      * Get user's exam history
      */
     async getUserAttempts(userId: string): Promise<ExamAttempt[]> {
-        const { data, error } = await supabase
-            .from('exam_attempts')
-            .select('*, exams(title, slug)')
-            .eq('user_id', userId)
-            .order('started_at', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        const response = await api.get<ApiResponse<ExamAttempt[]>>('/exams/user/attempts');
+        return response.data;
     },
 
     /**
      * Duplicate an exam including its questions
      */
     async duplicateExam(exam: Exam): Promise<Exam> {
-        const { data: newExam, error: examError } = await supabase
-            .from('exams')
-            .insert({
-                title: `${exam.title} (Bản sao)`,
-                slug: `${exam.slug}-copy-${Date.now()}`,
-                description: exam.description,
-                difficulty: exam.difficulty,
-                duration_minutes: exam.duration_minutes,
-                category_id: exam.category_id,
-                question_count: 0,
-                attempt_count: 0,
-                is_published: false
-            })
-            .select()
-            .single();
-
-        if (examError) throw examError;
-        if (!newExam) throw new Error('Failed to create new exam');
-
-        const { data: questions } = await supabase
-            .from('questions')
-            .select('*')
-            .eq('exam_id', exam.id);
-
-        if (questions && questions.length > 0) {
-            const newQuestions = questions.map(q => ({
-                exam_id: newExam.id,
-                question_text: q.question_text,
-                option_a: q.option_a,
-                option_b: q.option_b,
-                option_c: q.option_c,
-                option_d: q.option_d,
-                option_e: q.option_e,
-                option_f: q.option_f,
-                option_g: q.option_g,
-                option_h: q.option_h,
-                correct_answer: q.correct_answer,
-                explanation: q.explanation,
-                question_order: q.question_order,
-            }));
-
-            const { error: questionsError } = await supabase
-                .from('questions')
-                .insert(newQuestions);
-
-            if (questionsError) throw questionsError;
-
-            await supabase
-                .from('exams')
-                .update({ question_count: questions.length })
-                .eq('id', newExam.id);
-        }
-
-        return newExam;
+        // TODO: Implement when backend supports duplication
+        throw new Error('Duplicate exam not yet implemented');
     },
 
     /**
      * Delete an exam and its questions
      */
     async deleteExamWithQuestions(id: string): Promise<void> {
-        const { error: qError } = await supabase
-            .from('questions')
-            .delete()
-            .eq('exam_id', id);
-
-        if (qError) throw qError;
-
-        const { error: eError } = await supabase
-            .from('exams')
-            .delete()
-            .eq('id', id);
-
-        if (eError) throw eError;
+        // Deleting exam cascades to questions via Prisma schema
+        await api.delete(`/exams/${id}`);
     },
 };
